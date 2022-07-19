@@ -188,7 +188,14 @@ kubectl apply -f k8s/init-namespace/
 Create a Kubernetes secret to store the URL and API Token of Wavefront (replace values with your own real ones):
 
 ```bash
-kubectl create secret generic wavefront -n spring-petclinic --from-literal=wavefront-url=https://wavefront.surf --from-literal=wavefront-api-token=2e41f7cf-1111-2222-3333-7397a56113ca
+kubectl create secret generic wavefront -n spring-petclinic --from-literal=wavefront-url=https://wavefront.surf --from-literal=wavefront-api-token=7be9f004-0765-4cc8-b6a0-dd46fb6ea87a
+```
+
+Create a Kubernetes secret to store the Root password for the MySQL databases:
+```bash
+kubectl create secret generic vets-db-mysql -n spring-petclinic --from-literal=mysql-root-password=petclinic
+kubectl create secret generic visits-db-mysql -n spring-petclinic --from-literal=mysql-root-password=petclinic
+kubectl create secret generic customers-db-mysql -n spring-petclinic --from-literal=mysql-root-password=petclinic
 ```
 
 Create the Wavefront proxy pod, and the various Kubernetes services that will be used later on by our deployments:
@@ -200,7 +207,7 @@ kubectl apply -f k8s/init-services
 Verify the services are available:
 
 ```bash
-✗ kubectl get svc -n spring-petclinic
+kubectl get svc -n spring-petclinic
 NAME                TYPE           CLUSTER-IP     EXTERNAL-IP   PORT(S)             AGE
 api-gateway         LoadBalancer   10.7.250.24    <pending>     80:32675/TCP        36s
 customers-service   ClusterIP      10.7.245.64    <none>        8080/TCP            36s
@@ -236,9 +243,9 @@ Deploy the databases:
 ```bash
 helm repo add bitnami https://charts.bitnami.com/bitnami
 helm repo update
-helm install vets-db-mysql bitnami/mysql --namespace spring-petclinic --version 8.8.8 --set auth.database=service_instance_db
-helm install visits-db-mysql bitnami/mysql --namespace spring-petclinic  --version 8.8.8 --set auth.database=service_instance_db
-helm install customers-db-mysql bitnami/mysql --namespace spring-petclinic  --version 8.8.8 --set auth.database=service_instance_db
+helm install vets-db-mysql bitnami/mysql --namespace spring-petclinic --set auth.database=service_instance_db --set auth.existingSecret=vets-db-mysql
+helm install visits-db-mysql bitnami/mysql --namespace spring-petclinic --set auth.database=service_instance_db --set auth.existingSecret=visits-db-mysql
+helm install customers-db-mysql bitnami/mysql --namespace spring-petclinic --set auth.database=service_instance_db --set auth.existingSecret=customers-db-mysql
 ```
 
 ### Deploying the application
