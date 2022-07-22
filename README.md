@@ -193,9 +193,18 @@ kubectl create secret generic wavefront -n spring-petclinic --from-literal=wavef
 
 Create a Kubernetes secret to store the Root password for the MySQL databases:
 ```bash
-kubectl create secret generic vets-db-mysql -n spring-petclinic --from-literal=mysql-root-password=petclinic
-kubectl create secret generic visits-db-mysql -n spring-petclinic --from-literal=mysql-root-password=petclinic
-kubectl create secret generic customers-db-mysql -n spring-petclinic --from-literal=mysql-root-password=petclinic
+kubectl create secret generic vets-db-mysql -n spring-petclinic \
+--from-literal=mysql-root-password=petclinic \
+--from-literal=mysql-replication-password=petclinic \
+--from-literal=mysql-password=petclinic
+kubectl create secret generic visits-db-mysql -n spring-petclinic \
+--from-literal=mysql-root-password=petclinic \
+--from-literal=mysql-replication-password=petclinic \
+--from-literal=mysql-password=petclinic
+kubectl create secret generic customers-db-mysql -n spring-petclinic \
+--from-literal=mysql-root-password=petclinic \
+--from-literal=mysql-replication-password=petclinic \
+--from-literal=mysql-password=petclinic
 ```
 
 Create the Wavefront proxy pod, and the various Kubernetes services that will be used later on by our deployments:
@@ -243,9 +252,9 @@ Deploy the databases:
 ```bash
 helm repo add bitnami https://charts.bitnami.com/bitnami
 helm repo update
-helm install vets-db-mysql bitnami/mysql --namespace spring-petclinic --set auth.database=service_instance_db --set auth.existingSecret=vets-db-mysql
-helm install visits-db-mysql bitnami/mysql --namespace spring-petclinic --set auth.database=service_instance_db --set auth.existingSecret=visits-db-mysql
-helm install customers-db-mysql bitnami/mysql --namespace spring-petclinic --set auth.database=service_instance_db --set auth.existingSecret=customers-db-mysql
+helm install vets-db-mysql bitnami/mysql --namespace spring-petclinic --set auth.database=service_instance_db --set auth.existingSecret=vets-db-mysql --set primary.startupProbe.initialDelaySeconds=600
+helm install visits-db-mysql bitnami/mysql --namespace spring-petclinic --set auth.database=service_instance_db --set auth.existingSecret=visits-db-mysql --set primary.startupProbe.initialDelaySeconds=600
+helm install customers-db-mysql bitnami/mysql --namespace spring-petclinic --set auth.database=service_instance_db --set auth.existingSecret=customers-db-mysql --set primary.startupProbe.initialDelaySeconds=600
 ```
 
 ### Deploying the application
