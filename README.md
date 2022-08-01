@@ -247,15 +247,21 @@ standard (default)   kubernetes.io/gce-pd   6h11m
 
 ```
 
+### Special Note for Running on K3s by Rancher
+You will need to export the `KUBECONFIG` environment variable in order to for Helm to install the MySQL charts successfully.  If you're following this guide on K3s, execute the following:
+```bash
+export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+```
+If you're Kubeconfig file is located at a non-default path, replace the `/etc/rancher/k3s/k3s.yaml` with the correct path to your Kubeconfig file.
+
 Deploy the databases:
 
 ```bash
-(If on K3sm export KUBECONFIG path)
 helm repo add bitnami https://charts.bitnami.com/bitnami
 helm repo update
-helm install vets-db-mysql bitnami/mysql --namespace spring-petclinic --set auth.database=service_instance_db --set auth.existingSecret=vets-db-mysql --set primary.startupProbe.initialDelaySeconds=600
-helm install visits-db-mysql bitnami/mysql --namespace spring-petclinic --set auth.database=service_instance_db --set auth.existingSecret=visits-db-mysql --set primary.startupProbe.initialDelaySeconds=600
-helm install customers-db-mysql bitnami/mysql --namespace spring-petclinic --set auth.database=service_instance_db --set auth.existingSecret=customers-db-mysql --set primary.startupProbe.initialDelaySeconds=600
+helm install vets-db-mysql bitnami/mysql --namespace spring-petclinic --set auth.database=service_instance_db --set auth.existingSecret=vets-db-mysql --set primary.startupProbe.initialDelaySeconds=300
+helm install visits-db-mysql bitnami/mysql --namespace spring-petclinic --set auth.database=service_instance_db --set auth.existingSecret=visits-db-mysql --set primary.startupProbe.initialDelaySeconds=300
+helm install customers-db-mysql bitnami/mysql --namespace spring-petclinic --set auth.database=service_instance_db --set auth.existingSecret=customers-db-mysql --set primary.startupProbe.initialDelaySeconds=300
 ```
 
 ### Deploying the application
