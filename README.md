@@ -250,6 +250,7 @@ standard (default)   kubernetes.io/gce-pd   6h11m
 Deploy the databases:
 
 ```bash
+(If on K3sm export KUBECONFIG path)
 helm repo add bitnami https://charts.bitnami.com/bitnami
 helm repo update
 helm install vets-db-mysql bitnami/mysql --namespace spring-petclinic --set auth.database=service_instance_db --set auth.existingSecret=vets-db-mysql --set primary.startupProbe.initialDelaySeconds=600
