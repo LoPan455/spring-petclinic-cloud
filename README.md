@@ -5,7 +5,7 @@
 This microservices branch was initially derived from the [microservices version](https://github.com/spring-petclinic/spring-petclinic-microservices) to demonstrate how to split sample Spring application into [microservices](http://www.martinfowler.com/articles/microservices.html).
 To achieve that goal we use Spring Cloud Gateway, Spring Cloud Circuit Breaker, Spring Cloud Config, Spring Cloud Sleuth, Resilience4j, Micrometer and the Eureka Service Discovery from the [Spring Cloud Netflix](https://github.com/spring-cloud/spring-cloud-netflix) technology stack. While running on Kubernetes, some components (such as Spring Cloud Config and Eureka Service Discovery) are replaced with Kubernetes-native features such as config maps and Kubernetes DNS resolution.
 
-This fork also demostrates the use of free distributed tracing with Tanzu Observability by Wavefront, which provides cloud-based monitoring of  Spring Boot applications with 5 days of history.
+This fork also demonstrates the use of free distributed tracing with Tanzu Observability by Wavefront, which provides cloud-based monitoring of  Spring Boot applications with 5 days of history.
 
 
   * [Understanding the Spring Petclinic application](#understanding-the-spring-petclinic-application)
@@ -39,9 +39,6 @@ This fork also demostrates the use of free distributed tracing with Tanzu Observ
 You can then access petclinic here: http://localhost:8080/
 
 ![Spring Petclinic Microservices screenshot](./docs/application-screenshot.png?lastModify=1596391473)
-
-
-
 
 ## Compiling and pushing to Cloud Foundry:
 
@@ -85,7 +82,7 @@ cf cups -p '{"uri": "https://wavefront.surf", "api-token": "2e41f7cf-1111-2222-3
 ```
 If your operator deployed the wavefront proxy in your Cloud Foundry environment, point the URI to the proxy instead. You can obtain the value of the IP and port by creating a service key of the wavefront proxy and viewing the resulting JSON file. 
 
-Contine with creating the services and deploying the application's microservices. A sample is available at `scripts/deployToCloudFoundry.sh`. Note that some of the services' plans may be different in your environment, so please review before executing. For example, you want want to fork the [spring-petclinic-cloud-config](https://github.com/spring-petclinic/spring-petclinic-cloud-config.git) repository if you want to make changes to the configuration.
+Continue with creating the services and deploying the application's microservices. A sample is available at `scripts/deployToCloudFoundry.sh`. Note that some services' plans may be different in your environment, so please review before executing. For example, you want to fork the [spring-petclinic-cloud-config](https://github.com/spring-petclinic/spring-petclinic-cloud-config.git) repository if you want to make changes to the configuration.
 
 ```
 echo "Creating Required Services..."
@@ -137,8 +134,6 @@ Since we've included `brave.mysql8` in our `pom.xml`, the traces even show the v
 
 ![Wavefront dashboard screen](./docs/wavefront-traces.png)
 
-
-
 ## Compiling and pushing to Kubernetes
 
 This get a little bit more complicated when deploying to Kubernetes, since we need to manage Docker images, exposing services and more yaml. But we can pull through!
@@ -159,13 +154,13 @@ For other Docker registries, provide the full URL to your repository, for exampl
 export REPOSITORY_PREFIX=harbor.myregistry.com/demo
 ```
 
-One of the neat features in Spring Boot 2.3 is that it can leverage [Cloud Native Buildpacks](https://buildpacks.io) and [Paketo Buildpacks](https://paketo.io) to build production-ready images for us. Since we also configured the `spring-boot-maven-plugin` to use `layers`, we'll get optimized layering of the various components that build our Spring Boot app for optimal image caching. What this means in practice is that if we simple change a line of code in our app, it would only require us to push the layer containing our code and not the entire uber jar. To build all images and pushing them to your registry, run:
+One of the neat features in Spring Boot 2.3 is that it can leverage [Cloud Native Buildpacks](https://buildpacks.io) and [Paketo Buildpacks](https://paketo.io) to build production-ready images for us. Since we also configured the `spring-boot-maven-plugin` to use `layers`, we'll get optimized layering of the various components that build our Spring Boot app for optimal image caching. What this means in practice is that if we simply change a line of code in our app, it would only require us to push the layer containing our code and not the entire uber jar. To build all images and pushing them to your registry, run:
 
 ```bash
 mvn spring-boot:build-image -Pk8s -DREPOSITORY_PREFIX=${REPOSITORY_PREFIX} && ./scripts/pushImages.sh
 ```
 
-Since these are standalone microservices, you can also `cd` into any of the project folders and build it indivitually (as well as push it to the registry).
+Since these are standalone microservices, you can also `cd` into any of the project folders and build it individually (as well as push it to the registry).
 
 You should now have all your images in your Docker registry. It might be good to make sure you can see them available.
 
@@ -285,10 +280,6 @@ You should also see monitoring and traces from Wavefront under the application n
 
 ![Wavefront dashboard screen](./docs/wavefront-k8s.png)
 
-
-
-
-
 ## Starting services locally without Docker
 
 Every microservice is a Spring Boot application and can be started locally using IDE 
@@ -325,7 +316,6 @@ The `master` branch uses an  Alpine linux  with JRE 8 as Docker base. You will f
 
 *NOTE: Under MacOSX or Windows, make sure that the Docker VM has enough memory to run the microservices. The default settings
 are usually not enough and make the `docker-compose up` painfully slow.*
-
 
 ## In case you find a bug/suggested improvement for Spring Petclinic Microservices
 
@@ -412,7 +402,6 @@ All those three REST controllers `OwnerResource`, `PetResource` and `VisitResour
 | Gulp              | [Tasks automated by Gulp: minify CSS and JS, generate CSS from LESS, copy other static resources](spring-petclinic-ui/gulpfile.js)  |
 | Angular JS        | [app.js, controllers and templates](spring-petclinic-ui/src/scripts/)  |
 
-
 ## Interesting Spring Petclinic forks
 
 The Spring Petclinic master branch in the main [spring-projects](https://github.com/spring-projects/spring-petclinic)
@@ -422,7 +411,6 @@ This [spring-petclinic-cloud](https://github.com/spring-petclinic/spring-petclin
 hosted in a special GitHub org: [spring-petclinic](https://github.com/spring-petclinic).
 If you have a special interest in a different technology stack
 that could be used to implement the Pet Clinic then please join the community there.
-
 
 # Contributing
 
