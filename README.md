@@ -5,7 +5,7 @@
 This microservices branch was initially derived from the [microservices version](https://github.com/spring-petclinic/spring-petclinic-microservices) to demonstrate how to split sample Spring application into [microservices](http://www.martinfowler.com/articles/microservices.html).
 To achieve that goal we use Spring Cloud Gateway, Spring Cloud Circuit Breaker, Spring Cloud Config, Spring Cloud Sleuth, Resilience4j, Micrometer and the Eureka Service Discovery from the [Spring Cloud Netflix](https://github.com/spring-cloud/spring-cloud-netflix) technology stack. While running on Kubernetes, some components (such as Spring Cloud Config and Eureka Service Discovery) are replaced with Kubernetes-native features such as config maps and Kubernetes DNS resolution.
 
-This fork also demonstrates the use of free distributed tracing with Tanzu Observability by Wavefront, which provides cloud-based monitoring of  Spring Boot applications with 5 days of history.
+This fork also demostrates the use of free distributed tracing with Tanzu Observability by Wavefront, which provides cloud-based monitoring of  Spring Boot applications with 5 days of history.
 
 
   * [Understanding the Spring Petclinic application](#understanding-the-spring-petclinic-application)
@@ -153,7 +153,7 @@ For other Docker registries, provide the full URL to your repository, for exampl
 ```bash
 export REPOSITORY_PREFIX=harbor.myregistry.com/demo
 ```
-
+### Build Kubernetes-ready images directly with Maven
 One of the neat features in Spring Boot 2.3 is that it can leverage [Cloud Native Buildpacks](https://buildpacks.io) and [Paketo Buildpacks](https://paketo.io) to build production-ready images for us. Since we also configured the `spring-boot-maven-plugin` to use `layers`, we'll get optimized layering of the various components that build our Spring Boot app for optimal image caching. What this means in practice is that if we simply change a line of code in our app, it would only require us to push the layer containing our code and not the entire uber jar. To build all images and pushing them to your registry, run:
 
 ```bash
@@ -180,20 +180,23 @@ Create the `spring-petclinic` namespace for Spring petclinic:
 kubectl apply -f k8s/init-namespace/ 
 ```
 
-Create a Kubernetes secret to store the URL and API Token of Wavefront (replace values with your own real ones):
-
-```bash
-kubectl create secret generic wavefront -n spring-petclinic --from-literal=wavefront-url=https://wavefront.surf --from-literal=wavefront-api-token=7be9f004-0765-4cc8-b6a0-dd46fb6ea87a
-```
-
 Create a Kubernetes secret to store the Root password for the MySQL databases:
 ```bash
-kubectl create secret generic vets-db-mysql -n spring-petclinic --from-literal=mysql-root-password=petclinic
-kubectl create secret generic visits-db-mysql -n spring-petclinic --from-literal=mysql-root-password=petclinic
-kubectl create secret generic customers-db-mysql -n spring-petclinic --from-literal=mysql-root-password=petclinic
+kubectl create secret generic vets-db-mysql -n spring-petclinic \
+--from-literal=mysql-root-password=petclinic \
+--from-literal=mysql-replication-password=petclinic \
+--from-literal=mysql-password=petclinic
+kubectl create secret generic visits-db-mysql -n spring-petclinic \
+--from-literal=mysql-root-password=petclinic \
+--from-literal=mysql-replication-password=petclinic \
+--from-literal=mysql-password=petclinic
+kubectl create secret generic customers-db-mysql -n spring-petclinic \
+--from-literal=mysql-root-password=petclinic \
+--from-literal=mysql-replication-password=petclinic \
+--from-literal=mysql-password=petclinic
 ```
 
-Create the Wavefront proxy pod, and the various Kubernetes services that will be used later on by our deployments:
+Create the various Kubernetes services that will be used later on by our deployments:
 
 ```bash
 kubectl apply -f k8s/init-services
@@ -211,15 +214,6 @@ visits-service      ClusterIP      10.7.251.227   <none>        8080/TCP        
 wavefront-proxy     ClusterIP      10.7.253.85    <none>        2878/TCP,9411/TCP   37s
 ```
 
-Verify the wavefront proxy is running:
-
-```bash
-✗ kubectl get pods -n spring-petclinic
-NAME                              READY   STATUS    RESTARTS   AGE
-wavefront-proxy-dfbd4b695-fdd6t   1/1     Running   0          36s
-
-```
-
 ### Settings up databases with helm
 
 We'll now need to deploy our databases. For that, we'll use helm. You'll need helm 3 and above since we're not using Tiller in this deployment.
@@ -227,10 +221,9 @@ We'll now need to deploy our databases. For that, we'll use helm. You'll need he
 Make sure you have a single `default` StorageClass in your Kubernetes cluster:
 
 ```bash
-✗ kubectl get sc
+kubectl get sc
 NAME                 PROVISIONER            AGE
 standard (default)   kubernetes.io/gce-pd   6h11m
-
 ```
 
 Deploy the databases:
@@ -238,10 +231,13 @@ Deploy the databases:
 ```bash
 helm repo add bitnami https://charts.bitnami.com/bitnami
 helm repo update
-helm install vets-db-mysql bitnami/mysql --namespace spring-petclinic --set auth.database=service_instance_db --set auth.existingSecret=vets-db-mysql
-helm install visits-db-mysql bitnami/mysql --namespace spring-petclinic --set auth.database=service_instance_db --set auth.existingSecret=visits-db-mysql
-helm install customers-db-mysql bitnami/mysql --namespace spring-petclinic --set auth.database=service_instance_db --set auth.existingSecret=customers-db-mysql
+helm install vets-db-mysql bitnami/mysql --namespace spring-petclinic --set auth.database=service_instance_db --set auth.existingSecret=vets-db-mysql --set primary.startupProbe.initialDelaySeconds=60
+helm install visits-db-mysql bitnami/mysql --namespace spring-petclinic --set auth.database=service_instance_db --set auth.existingSecret=visits-db-mysql --set primary.startupProbe.initialDelaySeconds=60
+helm install customers-db-mysql bitnami/mysql --namespace spring-petclinic --set auth.database=service_instance_db --set auth.existingSecret=customers-db-mysql --set primary.startupProbe.initialDelaySeconds=60
 ```
+> Note: The MySQL containers take some time to initialize. The more resources allocated to your cluster, the smaller the startup probe delay value can safely be set.  It's recommended to set to at last 60 seconds, to allow the container to init before the Cluster restarts the container while it's in the middle of the init process.  If you are experiencing mysterious failures in the `describe pod` output of flapping pod, try increasing this value to allow the pod to successfully init and respond to the readiness probe
+
+> Note: If you have to remove these installations, remember to also delete the Persistent Volume Claims and Persistent Volume objects as well.  The two commands needed to do this are `kubectl delete pvc <name>` & `kubectl delete pv <name>`.  The Persistent Volume Claim objects must be removed _before_ the Persistent Volume objects.  This can remediate stale usernames or passwords, or incorrectly set usernames and passwords due to the persisted nature of failed installation's credentials.
 
 ### Deploying the application
 
@@ -254,7 +250,7 @@ Our deployment YAMLs have a placeholder called `REPOSITORY_PREFIX` so we'll be a
 Verify the pods are deployed:
 
 ```bash
-✗ kubectl get pods -n spring-petclinic 
+kubectl get pods -n spring-petclinic 
 NAME                                 READY   STATUS    RESTARTS   AGE
 api-gateway-585fff448f-q45jc         1/1     Running   0          4m20s
 customers-db-mysql-0                 1/1     Running   0          11m
@@ -269,16 +265,12 @@ wavefront-proxy-dfbd4b695-fdd6t      1/1     Running   0          14m
 Get the `EXTERNAL-IP` of the API Gateway:
 
 ```bash
-✗ kubectl get svc -n spring-petclinic api-gateway 
+kubectl get svc -n spring-petclinic api-gateway 
 NAME          TYPE           CLUSTER-IP    EXTERNAL-IP      PORT(S)        AGE
 api-gateway   LoadBalancer   10.7.250.24   34.1.2.22   80:32675/TCP   18m
 ```
 
 You can now browse to that IP in your browser and see the application running.
-
-You should also see monitoring and traces from Wavefront under the application name `spring-petclinic-k8s`:
-
-![Wavefront dashboard screen](./docs/wavefront-k8s.png)
 
 ## Starting services locally without Docker
 
@@ -339,7 +331,7 @@ or download and install the MySQL database (e.g., MySQL Community Server 5.7 GA)
 ### Use the Spring 'mysql' profile
 
 To use a MySQL database, you have to start 3 microservices (`visits-service`, `customers-service` and `vets-services`)
-with the `mysql` Spring profile. Add the `--spring.profiles.active=mysql` as programm argument.
+with the `mysql` Spring profile. Add the `--spring.profiles.active=mysql` as program argument.
 
 By default, at startup, database schema will be created and data will be populated.
 You may also manually create the PetClinic database and data by executing the `"db/mysql/{schema,data}.sql"` scripts of each 3 microservices. 
