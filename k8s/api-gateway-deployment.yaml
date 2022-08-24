@@ -11,49 +11,53 @@ spec:
   selector:
     matchLabels:
       app: api-gateway
-  strategy: {}
+  strategy: { }
   template:
     metadata:
       labels:
         app: api-gateway
     spec:
       containers:
-      - image: ${REPOSITORY_PREFIX}/spring-petclinic-cloud-api-gateway-otel:latest
-        name: api-gateway
-        imagePullPolicy: Always
-        livenessProbe:
-          httpGet:
-            port: 8080
-            path: /actuator/health/liveness
-          initialDelaySeconds: 90
-          periodSeconds: 5
-        readinessProbe:
-          httpGet:
-            port: 8080
-            path: /actuator/health/readiness
-          initialDelaySeconds: 15
-        lifecycle:
-          preStop:
-            exec:
-              command: ["sh", "-c", "sleep 10"]
-        resources:
-          limits:
-            memory: 1Gi
-          requests:
-            cpu: 1000m
-            memory: 1Gi
-        env:
-        - name: SPRING_PROFILES_ACTIVE
-          value: kubernetes
-        - name: SPLUNK_OTEL_AGENT
-          valueFrom:
-            fieldRef:
-              fieldPath: status.hostIP
-        - name: SPLUNK_METRICS_ENDPOINT
-          value: http://$(SPLUNK_OTEL_AGENT):9943
-        - name: OTEL_EXPORTER_OTLP_ENDPOINT
-          value: http://$(SPLUNK_OTEL_AGENT):4317
-        ports:
-        - containerPort: 8080
+        - image: ${REPOSITORY_PREFIX}/spring-petclinic-cloud-api-gateway-otel:latest
+          name: api-gateway
+          imagePullPolicy: Always
+          livenessProbe:
+            httpGet:
+              port: 8080
+              path: /actuator/health/liveness
+            initialDelaySeconds: 90
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              port: 8080
+              path: /actuator/health/readiness
+            initialDelaySeconds: 15
+          lifecycle:
+            preStop:
+              exec:
+                command: [ "sh", "-c", "sleep 10" ]
+          resources:
+            limits:
+              memory: 1Gi
+            requests:
+              cpu: 1000m
+              memory: 1Gi
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: kubernetes
+            - name: SPLUNK_OTEL_AGENT
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: SPLUNK_METRICS_ENDPOINT
+              value: http://$(SPLUNK_OTEL_AGENT):9943
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://$(SPLUNK_OTEL_AGENT):4317
+            - name: OTEL_SERVICE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          ports:
+            - containerPort: 8080
       restartPolicy: Always
-status: {}
+status: { }
