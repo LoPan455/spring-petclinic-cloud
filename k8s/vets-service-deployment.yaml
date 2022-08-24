@@ -66,8 +66,6 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-        - name: OTEL_RESOURCE_ATTRIBUTES
-          value
         ports:
         - containerPort: 8080
       restartPolicy: Always
