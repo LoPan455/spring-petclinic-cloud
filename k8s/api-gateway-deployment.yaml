@@ -45,6 +45,14 @@ spec:
         env:
         - name: SPRING_PROFILES_ACTIVE
           value: kubernetes
+        - name: SPLUNK_OTEL_AGENT
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+        - name: SPLUNK_METRICS_ENDPOINT
+          value: http://$(SPLUNK_OTEL_AGENT):9943
+        - name: OTEL_EXPORTER_ENDPOINT
+          value: http://$(SPLUNK_OTEL_AGENT):4317
         ports:
         - containerPort: 8080
       restartPolicy: Always
