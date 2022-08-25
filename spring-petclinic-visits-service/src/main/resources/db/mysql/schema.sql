@@ -1,6 +1,6 @@
-CREATE DATABASE IF NOT EXISTS service_instance_db;
+CREATE DATABASE IF NOT EXISTS vists_service_db;
 
-USE service_instance_db;
+USE vists_service_db;
 
 CREATE TABLE IF NOT EXISTS visits (
   id INT(4) UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,

@@ -36,7 +36,7 @@ This fork also demostrates the use of free distributed tracing with Tanzu Observ
 
 [A blog bost introducing the Spring Petclinic Microsevices](http://javaetmoi.com/2018/10/architecture-microservices-avec-spring-cloud/) (french language)
 
-You can then access petclinic here: http://localhost:8080/
+You can then access Petclinic here: http://localhost:8080/
 
 ![Spring Petclinic Microservices screenshot](./docs/application-screenshot.png?lastModify=1596391473)
 
@@ -136,16 +136,16 @@ Since we've included `brave.mysql8` in our `pom.xml`, the traces even show the v
 
 ## Compiling and pushing to Kubernetes
 
-This get a little bit more complicated when deploying to Kubernetes, since we need to manage Docker images, exposing services and more yaml. But we can pull through!
+This get more complicated when deploying to Kubernetes, since we need to manage Docker images, exposing services and more yaml. But we can pull through!
 
 ### Choose your Docker registry
 
 You need to define your target Docker registry. Make sure you're already logged in by running `docker login <endpoint>` or `docker login` if you're just targeting Docker hub.
 
-Setup an env variable to target your Docker registry. If you're targeting Docker hub, simple provide your username, for example:
+Setup an environment variable to target your Docker registry. If you're targeting Docker hub, simple provide your Docker Hub username, for example:
 
 ```bash
-export REPOSITORY_PREFIX=odedia
+export REPOSITORY_PREFIX=<Docker Hub username>
 ```
 
 For other Docker registries, provide the full URL to your repository, for example:
@@ -154,12 +154,17 @@ For other Docker registries, provide the full URL to your repository, for exampl
 export REPOSITORY_PREFIX=harbor.myregistry.com/demo
 ```
 ### Build Kubernetes-ready images directly with Maven
-One of the neat features in Spring Boot 2.3 is that it can leverage [Cloud Native Buildpacks](https://buildpacks.io) and [Paketo Buildpacks](https://paketo.io) to build production-ready images for us. Since we also configured the `spring-boot-maven-plugin` to use `layers`, we'll get optimized layering of the various components that build our Spring Boot app for optimal image caching. What this means in practice is that if we simply change a line of code in our app, it would only require us to push the layer containing our code and not the entire uber jar. To build all images and pushing them to your registry, run:
+One of the neat features in Spring Boot 2.3+ is that it can leverage [Cloud Native Buildpacks](https://buildpacks.io) and [Paketo Buildpacks](https://paketo.io) to build production-ready images for us. Buildpacks allow the details of the application image to be set in the `pom.xml` file rather than in a separate Dockerfile.  An additional benenfit is the Paketo implementations handle a variety of other tasks that build a hardened, secure production-ready image.  The `spring-boot-maven-plugin:build-image` goal contains the logic and added configuration that are used in the image creation process.  The script below uses settings from the `k8s` Maven profile located in each module's `pom.xml`, which are imported in the parent `pom.xml` via the `<module/>` declarations.    
+
+Since we also configured the `spring-boot-maven-plugin` to use `layers`, we'll get optimized layering of the various components that build our Spring Boot app for optimal image caching. What this means in practice is that if we simply change a line of code in our app, it would only require us to push the layer containing our code and not the entire uber jar. To build all images and pushing them to your registry, run:
 
 ```bash
 mvn spring-boot:build-image -Pk8s -DREPOSITORY_PREFIX=${REPOSITORY_PREFIX} && ./scripts/pushImages.sh
 ```
 
+If you'd like to add additional tags to the output images, it's best to set them explicitly by modifying the `/scripts/pushImages.sh` shell scripts.  
+
+#### Build Images Individually
 Since these are standalone microservices, you can also `cd` into any of the project folders and build it individually (as well as push it to the registry).
 
 You should now have all your images in your Docker registry. It might be good to make sure you can see them available.
@@ -214,7 +219,7 @@ visits-service      ClusterIP      10.7.251.227   <none>        8080/TCP        
 wavefront-proxy     ClusterIP      10.7.253.85    <none>        2878/TCP,9411/TCP   37s
 ```
 
-### Settings up databases with helm
+### Settings up databases with Helm
 
 We'll now need to deploy our databases. For that, we'll use helm. You'll need helm 3 and above since we're not using Tiller in this deployment.
 
@@ -231,11 +236,11 @@ Deploy the databases:
 ```bash
 helm repo add bitnami https://charts.bitnami.com/bitnami
 helm repo update
-helm install vets-db-mysql bitnami/mysql --namespace spring-petclinic --set auth.database=service_instance_db --set auth.existingSecret=vets-db-mysql --set primary.startupProbe.initialDelaySeconds=60
-helm install visits-db-mysql bitnami/mysql --namespace spring-petclinic --set auth.database=service_instance_db --set auth.existingSecret=visits-db-mysql --set primary.startupProbe.initialDelaySeconds=60
-helm install customers-db-mysql bitnami/mysql --namespace spring-petclinic --set auth.database=service_instance_db --set auth.existingSecret=customers-db-mysql --set primary.startupProbe.initialDelaySeconds=60
+helm install vets-db-mysql bitnami/mysql --namespace spring-petclinic --set auth.database=vets_service_db --set auth.existingSecret=vets-db-mysql --set primary.startupProbe.initialDelaySeconds=180
+helm install visits-db-mysql bitnami/mysql --namespace spring-petclinic --set auth.database=vists_service_db --set auth.existingSecret=visits-db-mysql --set primary.startupProbe.initialDelaySeconds=180
+helm install customers-db-mysql bitnami/mysql --namespace spring-petclinic --set auth.database=customers_service_db --set auth.existingSecret=customers-db-mysql --set primary.startupProbe.initialDelaySeconds=180
 ```
-> Note: The MySQL containers take some time to initialize. The more resources allocated to your cluster, the smaller the startup probe delay value can safely be set.  It's recommended to set to at last 60 seconds, to allow the container to init before the Cluster restarts the container while it's in the middle of the init process.  If you are experiencing mysterious failures in the `describe pod` output of flapping pod, try increasing this value to allow the pod to successfully init and respond to the readiness probe
+> Note: The MySQL containers take some time to initialize. The more resources allocated to your cluster, the smaller the startup probe delay value can safely be set.  It's recommended to set to at least 60 seconds, to allow the container to initialize before the cluster restarts the container mid-init.  If you are experiencing mysterious failures and the pod logs of the init container don't reveal a specific MySQL error, try increasing this value to allow the pod to successfully init and respond to the readiness probe.
 
 > Note: If you have to remove these installations, remember to also delete the Persistent Volume Claims and Persistent Volume objects as well.  The two commands needed to do this are `kubectl delete pvc <name>` & `kubectl delete pv <name>`.  The Persistent Volume Claim objects must be removed _before_ the Persistent Volume objects.  This can remediate stale usernames or passwords, or incorrectly set usernames and passwords due to the persisted nature of failed installation's credentials.
 

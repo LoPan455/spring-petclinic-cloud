@@ -173,8 +173,6 @@
                             <BPE_PREPEND_JAVA_TOOL_OPTIONS>
                                 -javaagent:/workspace/BOOT-INF/lib/splunk-otel-javaagent-1.14.2.jar
                                 -Dsplunk.profiler.enabled=true -Dsplunk.metrics.enabled=true
-                                -Dotel.service.name=customers-service
-                                -Dotel.resource.attributes=deployment.environment=tj-devlab
                             </BPE_PREPEND_JAVA_TOOL_OPTIONS>
                         </env>
                     </image>
