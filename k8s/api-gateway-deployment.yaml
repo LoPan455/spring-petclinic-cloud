@@ -56,7 +56,9 @@ spec:
             - name: OTEL_SERVICE_NAME
               valueFrom:
                 fieldRef:
-                  fieldPath: metadata.name
+                  fieldPath: metadata.labels.app
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: deployment.environment=tj-devlab
           ports:
             - containerPort: 8080
       restartPolicy: Always
